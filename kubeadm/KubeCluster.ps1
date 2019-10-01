@@ -1,12 +1,57 @@
+<#
+.SYNOPSIS
+Utility script to assist in management of Kubernetes Windows worker nodes
+
+.DESCRIPTION
+Assists in installing required pre-requisites, and can join and unjoin this Windows worker node from an existing Kubernetes cluster.
+
+.PARAMETER help
+Print the help
+
+.PARAMETER install
+Install pre-requisites
+
+.PARAMETER join
+Join the windows node to the cluster
+
+.PARAMETER reset
+Reset and clean up this Windows worker node
+
+.PARAMETER force
+Skip user prompts and auto-accept (i.e. deletion, installing dependencies, etc)
+
+.PARAMETER ConfigFile
+Path to input configuration JSON
+
+.EXAMPLE
+PS> .\KubeCluster.ps1 -help
+Prints this help
+.EXAMPLE
+PS> .\KubeCluster.ps1 -install -ConfigFile kubecluster.json 
+Sets up this Windows worker node to run containers
+.EXAMPLE
+PS> .\KubeCluster.ps1 -join -ConfigFile kubecluster.json
+Joins this Windows worker node to an existing cluster
+.EXAMPLE
+PS> .\KubeCluster.ps1 -reset -ConfigFile kubecluster.json
+Resets and cleans up this Windows worker node
+
+.LINK
+
+https://github.com/kubernetes-sigs/sig-windows-tools/tree/master/kubeadm
+
+#>
 Param(
     [parameter(Mandatory = $false,HelpMessage="Print the help")]
     [switch] $help,
     [parameter(Mandatory = $false,HelpMessage="Install pre-requisites")]
     [switch] $install,
-    [parameter(Mandatory = $false,HelpMessage= "Join the windows node to the cluster")]
+    [parameter(Mandatory = $false,HelpMessage="Join the windows node to the cluster")]
     [switch] $join,
     [parameter(Mandatory = $false,HelpMessage="Reset and clean up this Windows worker node")]
     [switch] $reset,
+    [parameter(Mandatory = $false,HelpMessage="Skip user prompts and auto-accept (i.e. deletion, installing dependencies, etc)")]
+    [switch] $force,
     [parameter(Mandatory = $false,HelpMessage="Path to input configuration JSON")] 
     $ConfigFile
 )
@@ -15,19 +60,6 @@ function Usage()
 {
     $bin = $PSCommandPath 
     Get-Help $bin -Detailed
-
-    $usage = "
-    Usage: 
-		$bin [-help] [-install] [-join] [-reset]
-
-	Examples:
-        $bin -help                                                           Prints this help
-        $bin -install -ConfigFile kubecluster.json                           Sets up this Windows node to run containers
-        $bin -join -ConfigFile kubecluster.json                              Joins the Windows node to existing cluster
-        $bin -reset -ConfigFile kubecluster.json                             Resets and cleans up this Windows worker node
-    "
-
-    Write-Host $usage
 }
 
 # Handle --help
@@ -114,7 +146,6 @@ $hnsDestination = "$PSScriptRoot\hns.psm1"
 DownloadFile -Url $hnsPath -Destination $hnsDestination
 Import-Module $hnsDestination
 
-
 ReadKubeclusterConfig -ConfigFile $ConfigFile
 InitHelper
 PrintConfig
@@ -182,7 +213,12 @@ if ($install.IsPresent)
 {
     if (InstallContainersRole)
     {
-        $res = Read-Host "Continue to Reboot the host [Y/n] - Default [Y]"
+        $res = 'Y'
+        if (!$force.IsPresent)
+        {
+            $res = Read-Host "Continue to Reboot the host [Y/n] - Default [Y]"
+        }
+
         if ($res -eq '' -or $res -eq 'Y'  -or $res -eq 'y')
         {
             Restart-And-Run
@@ -193,16 +229,30 @@ if ($install.IsPresent)
     InstallKubernetesBinaries -Destination  $Global:BaseDir -Source $Global:ClusterConfiguration.Kubernetes.Source
     DownloadCniBinaries -NetworkMode $Global:NetworkMode -CniPath $(GetCniPath)
 
-    if (!(Test-Path $env:HOMEDRIVE/$env:HOMEPATH/.ssh/id_rsa.pub))
+    if (!(Test-Path $env:USERPROFILE/.ssh/id_rsa.pub))
     {
-        $res = Read-Host "Do you wish to generate a SSH Key & Add it to the Linux control-plane node [Y/n] - Default [Y]"
-        if ($res -eq '' -or $res -eq 'Y'  -or $res -eq 'y')
+        if (!$force.IsPresent)
         {
-            ssh-keygen.exe
+            $res = Read-Host "Do you wish to generate a SSH Key & Add it to the Linux control-plane node [Y/n] - Default [Y]"
+            if ($res -eq '' -or $res -eq 'Y'  -or $res -eq 'y')
+            {
+                ssh-keygen.exe
+            }
+            else
+            {
+                Write-Host "Please close this shell and open a new one to join this node to the cluster."
+                exit
+            }
+        }
+        else
+        {
+            Write-Host "Generating SSH key"
+            cmd /c "ssh-keygen.exe -t rsa -N """" -f ""$env:USERPROFILE\.ssh\id_rsa"""
+            cmd /c "ssh-keyscan.exe $($Global:MasterIp) 2>NUL" | Out-File -Encoding utf8 $env:USERPROFILE\.ssh\known_hosts
         }
     }
 
-    $pubKey = Get-Content $env:HOMEDRIVE/$env:HOMEPATH/.ssh/id_rsa.pub
+    $pubKey = Get-Content $env:USERPROFILE/.ssh/id_rsa.pub
     Write-Host "Execute the below commands on the Linux control-plane node ($Global:MasterIp) to add this Windows node's public key to its authorized keys"
     
     Write-Host "touch ~/.ssh/authorized_keys"
@@ -252,17 +302,17 @@ if ($Join.IsPresent)
     # Install Services & Start in the below order
     # 1. Install & Start Kubelet
     InstallKubelet  -CniDir $(GetCniPath) `
-                -CniConf $(GetCniConfigPath) -KubeDnsServiceIp $KubeDnsServiceIp `
-                -NodeIp $Global:ManagementIp -KubeletFeatureGates $KubeletFeatureGates
+        -CniConf $(GetCniConfigPath) -KubeDnsServiceIp $KubeDnsServiceIp `
+        -NodeIp $Global:ManagementIp -KubeletFeatureGates $KubeletFeatureGates
     #StartKubelet
 
     #WaitForNodeRegistration -TimeoutSeconds 10
 
     # 2. Install CNI & Start services
     InstallCNI -Cni $Global:Cni -NetworkMode $Global:NetworkMode `
-                  -ManagementIP $Global:ManagementIp `
-                  -InterfaceName $Global:InterfaceName `
-                  -CniPath $(GetCniPath)
+        -ManagementIP $Global:ManagementIp `
+        -InterfaceName $Global:InterfaceName `
+        -CniPath $(GetCniPath)
 
     if ($Global:Cni -eq "flannel")
     {
@@ -276,17 +326,17 @@ if ($Join.IsPresent)
     {
         $sourceVip = GetSourceVip -NetworkName $Global:NetworkName
         InstallKubeProxy -KubeConfig $(GetKubeConfig) `
-                -NetworkName $Global:NetworkName -ClusterCIDR  $ClusterCIDR `
-                -SourceVip $sourceVip `
-                -IsDsr:$Global:DsrEnabled `
-                -ProxyFeatureGates $Global:KubeproxyGates
+            -NetworkName $Global:NetworkName -ClusterCIDR  $ClusterCIDR `
+            -SourceVip $sourceVip `
+            -IsDsr:$Global:DsrEnabled `
+            -ProxyFeatureGates $Global:KubeproxyGates
     }
     else 
     {
         $env:KUBE_NETWORK=$Global:NetworkName
         InstallKubeProxy -KubeConfig $(GetKubeConfig) `
-                -IsDsr:$Global:DsrEnabled `
-                -NetworkName $Global:NetworkName -ClusterCIDR  $ClusterCIDR
+            -IsDsr:$Global:DsrEnabled `
+            -NetworkName $Global:NetworkName -ClusterCIDR  $ClusterCIDR
     }
     
     StartKubeproxy
@@ -308,7 +358,7 @@ elseif ($Reset.IsPresent)
     UninstallKubelet
     UninstallKubernetesBinaries -Destination  $Global:BaseDir
 
-    Remove-Item $Global:BaseDir -ErrorAction SilentlyContinue
-    Remove-Item $env:HOMEDRIVE\$env:HOMEPATH\.kube -ErrorAction SilentlyContinue
+    Remove-Item $Global:BaseDir -Recurse -Force -ErrorAction SilentlyContinue
+    Remove-Item $env:USERPROFILE\.kube -Recurse -Force -ErrorAction SilentlyContinue
     RemoveExternalNetwork
 }
