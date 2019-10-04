@@ -20,7 +20,6 @@
     "Kubernetes" : {
         "ControlPlane" : {
             "IpAddress" : "kubemasterIP",
-            "Username" : "localadmin",
             "KubeadmToken" : "token",
             "KubeadmCAHash" : "discovery-token-ca-cert-hash"
         },

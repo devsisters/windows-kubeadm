@@ -21,13 +21,6 @@ function KubeConfigExists()
     return Test-Path $(GetKubeConfig)
 }
 
-function DownloadKubeConfig($Master, $User=$Global:MasterUsername)
-{
-    $kc = GetKubeConfig
-    Write-Host "Downloading Kubeconfig from ${Master}:~/.kube/config to $kc"
-    scp ${User}@${Master}:~/.kube/config $kc
-}
-
 function GetLogDir()
 {
     return [io.Path]::Combine($Global:BaseDir, "logs");
@@ -87,7 +80,6 @@ function InitHelper()
 function LoadGlobals()
 {
     $Global:BaseDir = $Global:ClusterConfiguration.Install.Destination
-    $Global:MasterUsername = $Global:ClusterConfiguration.Kubernetes.ControlPlane.Username
     $Global:MasterIp = $Global:ClusterConfiguration.Kubernetes.ControlPlane.IpAddress
     $Global:Token = $Global:ClusterConfiguration.Kubernetes.ControlPlane.KubeadmToken
     $Global:CAHash = $Global:ClusterConfiguration.Kubernetes.ControlPlane.KubeadmCAHash
@@ -1341,7 +1333,6 @@ Export-ModuleMember InstallCRI
 Export-ModuleMember UninstallCNI
 Export-ModuleMember InitHelper
 Export-ModuleMember GetKubeConfig
-Export-ModuleMember DownloadKubeConfig
 Export-ModuleMember GetCniPath
 Export-ModuleMember GetCniConfigPath
 Export-ModuleMember Get-InterfaceIpAddress

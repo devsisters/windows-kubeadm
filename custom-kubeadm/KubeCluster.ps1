@@ -227,37 +227,6 @@ if ($install.IsPresent)
     InstallCRI $Global:Cri
     InstallKubernetesBinaries -Destination  $Global:BaseDir -Source $Global:ClusterConfiguration.Kubernetes.Source
     DownloadCniBinaries -NetworkMode $Global:NetworkMode -CniPath $(GetCniPath)
-
-    if (!(Test-Path $env:USERPROFILE/.ssh/id_rsa.pub))
-    {
-        if (!$force.IsPresent)
-        {
-            $res = Read-Host "Do you wish to generate a SSH Key & Add it to the Linux control-plane node [Y/n] - Default [Y]"
-            if ($res -eq '' -or $res -eq 'Y'  -or $res -eq 'y')
-            {
-                ssh-keygen.exe
-            }
-            else
-            {
-                Write-Host "Please close this shell and open a new one to join this node to the cluster."
-                exit
-            }
-        }
-        else
-        {
-            Write-Host "Generating SSH key"
-            cmd /c "ssh-keygen.exe -t rsa -N """" -f ""$env:USERPROFILE\.ssh\id_rsa"""
-            cmd /c "ssh-keyscan.exe $($Global:MasterIp) 2>NUL" | Out-File -Encoding utf8 $env:USERPROFILE\.ssh\known_hosts
-        }
-    }
-
-    $pubKey = Get-Content $env:USERPROFILE/.ssh/id_rsa.pub
-    Write-Host "Execute the below commands on the Linux control-plane node ($Global:MasterIp) to add this Windows node's public key to its authorized keys"
-    
-    Write-Host "touch ~/.ssh/authorized_keys"
-    Write-Host "echo $pubKey >> ~/.ssh/authorized_keys"
-    Write-Host "Please close this shell and open a new one to join this node to the cluster."
-
     exit
 }
 
@@ -268,16 +237,10 @@ if ($Join.IsPresent)
     $kubeConfig = GetKubeConfig
     if (!(KubeConfigExists))
     {
-        # Fetch KubeConfig from the master
-        DownloadKubeConfig -Master $Global:MasterIp -User $Global:MasterUsername
-        if (!(KubeConfigExists))
-        {
-            throw $kubeConfig + " does not exist. Cannot connect to the control-plane node"
-        }
+        throw "$kubeConfig does not exists. Please provide kubeconfig file."
     }
 
     # Validate connectivity with the API Server
-
     Write-Host "Trying to connect to the Kubernetes control-plane node"
     try {
         ReadKubeClusterInfo 
