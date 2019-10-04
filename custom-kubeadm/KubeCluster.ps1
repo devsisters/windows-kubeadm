@@ -56,7 +56,7 @@ Param(
     $ConfigFile
 )
 
-function Usage()
+function Usage
 {
     $bin = $PSCommandPath 
     Get-Help $bin -Detailed
@@ -69,8 +69,11 @@ if ($help.IsPresent)
     exit
 }
 
-function ReadKubeclusterConfig($ConfigFile)
+function ReadKubeclusterConfig
 {
+    params (
+        [String] $ConfigFile
+    )
     # Read the configuration and initialize default values if not found
     $Global:ClusterConfiguration = ConvertFrom-Json ((GetFileContent $ConfigFile -ErrorAction Stop) | out-string)
     if (!$Global:ClusterConfiguration.Install)
@@ -164,8 +167,7 @@ if ($Global:NetworkPlugin -eq "vxlan")
 ######################################################################################################################
 
 # Handle --install
-function
-Restart-And-Run()
+function Restart-And-Run
 {
     Write-Output "Restart is required; restarting now..."
 

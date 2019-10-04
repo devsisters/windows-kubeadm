@@ -291,7 +291,7 @@ function DownloadFlannelBinaries()
     param(
         [Parameter(Mandatory = $false, Position = 0)]
         [string] $Release = "0.11.0",
-        [string] $Destination = "c:\flannel"
+        [string] $Destination = "$env:SYSTEMDRIVE\flannel"
     )
 
     Write-Host "Downloading Flannel binaries"
@@ -300,14 +300,14 @@ function DownloadFlannelBinaries()
 
 function GetKubeFlannelPath()
 {
-    return "c:\etc\kube-flannel"
+    return "$env:SYSTEMDRIVE\etc\kube-flannel"
 }
 
 function InstallFlannelD()
 {
     param(
     [Parameter(Mandatory = $false, Position = 0)]
-    [string] $Destination = "c:\flannel",
+    [string] $Destination = "$env:SYSTEMDRIVE\flannel",
     [Parameter(Mandatory = $true)][string] $InterfaceIpAddress
     )
     
