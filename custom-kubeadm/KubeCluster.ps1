@@ -100,10 +100,7 @@ function ReadKubeclusterConfig
 
     if (!$Global:ClusterConfiguration.Kubernetes.Network)
     {
-        $Global:ClusterConfiguration.Kubernetes | Add-Member -MemberType NoteProperty -Name Network -Value @{
-            ServiceCidr = "10.96.0.0/12";
-            ClusterCidr = "10.244.0.0/16";
-        }
+        throw "Kubernetes network information missing in the configuration file"
     }
 
     if (!$Global:ClusterConfiguration.Cni)
