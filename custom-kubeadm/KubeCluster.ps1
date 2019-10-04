@@ -27,7 +27,7 @@ Path to input configuration JSON
 PS> .\KubeCluster.ps1 -help
 Prints this help
 .EXAMPLE
-PS> .\KubeCluster.ps1 -install -ConfigFile kubecluster.json 
+PS> .\KubeCluster.ps1 -install -ConfigFile kubecluster.json
 Sets up this Windows worker node to run containers
 .EXAMPLE
 PS> .\KubeCluster.ps1 -join -ConfigFile kubecluster.json
@@ -52,13 +52,13 @@ Param(
     [switch] $reset,
     [parameter(Mandatory = $false,HelpMessage="Skip user prompts and auto-accept (i.e. deletion, installing dependencies, etc)")]
     [switch] $force,
-    [parameter(Mandatory = $false,HelpMessage="Path to input configuration JSON")] 
+    [parameter(Mandatory = $false,HelpMessage="Path to input configuration JSON")]
     $ConfigFile
 )
 
 function Usage
 {
-    $bin = $PSCommandPath 
+    $bin = $PSCommandPath
     Get-Help $bin -Detailed
 }
 
@@ -78,7 +78,7 @@ function ReadKubeclusterConfig
     $Global:ClusterConfiguration = ConvertFrom-Json ((GetFileContent $ConfigFile -ErrorAction Stop) | out-string)
     if (!$Global:ClusterConfiguration.Install)
     {
-        $Global:ClusterConfiguration | Add-Member -MemberType NoteProperty -Name Install -Value @{ 
+        $Global:ClusterConfiguration | Add-Member -MemberType NoteProperty -Name Install -Value @{
             Destination = "$env:ALLUSERSPROFILE\Kubernetes";
         }
     }
@@ -142,7 +142,7 @@ function ReadKubeclusterConfig
 
 Import-Module "$PSScriptRoot\KubeClusterHelper.psm1"
 $hnsPath = "https://raw.githubusercontent.com/Microsoft/SDN/master/Kubernetes/windows/hns.psm1"
-$hnsDestination = "$PSScriptRoot\hns.psm1" 
+$hnsDestination = "$PSScriptRoot\hns.psm1"
 DownloadFile -Url $hnsPath -Destination $hnsDestination
 Import-Module $hnsDestination
 
@@ -151,8 +151,7 @@ InitHelper
 PrintConfig
 WriteKubeClusterConfig
 
-
-# Initialize internal network modes of windows corresponding to 
+# Initialize internal network modes of windows corresponding to
 # the plugin used in the cluster
 $Global:NetworkName = "cbr0"
 $Global:NetworkMode = "l2bridge"
@@ -196,7 +195,7 @@ function Restart-And-Run
 
     try
     {
-        Restart-Computer  
+        Restart-Computer
     }
     catch
     {
@@ -241,9 +240,9 @@ if ($Join.IsPresent)
     }
 
     # Validate connectivity with the API Server
-    Write-Host "Trying to connect to the Kubernetes control-plane node"
+    Write-Output "Trying to connect to the Kubernetes control-plane node"
     try {
-        ReadKubeClusterInfo 
+        ReadKubeClusterInfo
     } catch {
         throw "Unable to connect to the control-plane node. Reason [$_]"
     }
@@ -251,14 +250,14 @@ if ($Join.IsPresent)
     $KubeDnsServiceIP = GetKubeDnsServiceIp
     $ClusterCIDR = GetClusterCidr
     $ServiceCIDR = GetServiceCidr
-    
-    Write-Host "############################################"
-    Write-Host "Able to connect to the control-plane node"
-    Write-Host "Discovered the following"
-    Write-Host "Cluster CIDR    : $ClusterCIDR"
-    Write-Host "Service CIDR    : $ServiceCIDR"
-    Write-Host "DNS ServiceIp   : $KubeDnsServiceIP"
-    Write-Host "############################################"
+
+    Write-Output "############################################"
+    Write-Output "Able to connect to the control-plane node"
+    Write-Output "Discovered the following"
+    Write-Output "Cluster CIDR    : $ClusterCIDR"
+    Write-Output "Service CIDR    : $ServiceCIDR"
+    Write-Output "DNS ServiceIp   : $KubeDnsServiceIP"
+    Write-Output "############################################"
 
     #
     # Install Services & Start in the below order
@@ -279,7 +278,7 @@ if ($Join.IsPresent)
     if ($Global:Cni -eq "flannel")
     {
         CreateExternalNetwork -NetworkMode $Global:NetworkMode -InterfaceName $Global:InterfaceName
-        StartFlanneld 
+        StartFlanneld
         WaitForNetwork $Global:NetworkName
     }
 
@@ -293,18 +292,18 @@ if ($Join.IsPresent)
             -IsDsr:$Global:DsrEnabled `
             -ProxyFeatureGates $Global:KubeproxyGates
     }
-    else 
+    else
     {
         $env:KUBE_NETWORK=$Global:NetworkName
         InstallKubeProxy -KubeConfig $(GetKubeConfig) `
             -IsDsr:$Global:DsrEnabled `
             -NetworkName $Global:NetworkName -ClusterCIDR  $ClusterCIDR
     }
-    
+
     StartKubeproxy
 
     GetKubeNodes
-    Write-Host "Node $(hostname) successfully joined the cluster"
+    Write-Output "Node $(hostname) successfully joined the cluster"
 }
 # Handle -Reset
 elseif ($Reset.IsPresent)
