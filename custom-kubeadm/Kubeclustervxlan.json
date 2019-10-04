@@ -24,7 +24,7 @@
             "KubeadmCAHash" : "discovery-token-ca-cert-hash"
         },
         "KubeProxy" : {
-            "Gates" : "WinOverlay=true"
+            "Gates" : "WinOverlay=true,WinDSR=true"
         },
         "Network" : {
             "ServiceCidr" : "10.96.0.0/12",
