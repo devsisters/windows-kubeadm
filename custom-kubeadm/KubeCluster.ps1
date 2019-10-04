@@ -110,7 +110,7 @@ function ReadKubeclusterConfig
             Plugin = @{
                 Name = "vxlan";
             };
-            InterfaceName = "Ethernet";
+            InterfaceName = (Get-NetAdapter | Where-Object {-Not $_.Name.StartsWith("vEthernet") -And $_.Name.StartsWith("Ethernet")}).Name;
         }
     }
 
@@ -119,7 +119,7 @@ function ReadKubeclusterConfig
         if (!$Global:ClusterConfiguration.Kubernetes.KubeProxy)
         {
             $Global:ClusterConfiguration.Kubernetes | Add-Member -MemberType NoteProperty -Name KubeProxy -Value @{
-                    Gates = "WinOverlay=true";
+                    Gates = "WinOverlay=true,WinDSR=true";
             }
         }
     }
