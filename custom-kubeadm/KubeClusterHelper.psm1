@@ -1135,7 +1135,7 @@ function InstallKubernetesBinaries()
     
     $env:KUBECONFIG = $(GetKubeConfig)
 
-    $Release = "1.15"
+    $Release = "1.16"
     if ($Source.Release)
     {
         $Release = $Source.Release

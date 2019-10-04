@@ -10,20 +10,14 @@
     "Cni" : {
         "Name" : "flannel",
         "Source" : [{ 
-            "Name" : "flanneld",
-            "Url" : "https://github.com/coreos/flannel/releases/download/v0.11.0/flanneld.exe"
-            }
-        ],
+            "Name" : "flanneld"
+        }],
         "Plugin" : {
             "Name": "vxlan"
         },
         "InterfaceName" : "Ethernet"
     },
     "Kubernetes" : {
-        "Source" : {
-            "Release" : "1.16.0",
-            "Url" : "https://dl.k8s.io/v1.16.0/kubernetes-node-windows-amd64.tar.gz"
-        },
         "ControlPlane" : {
             "IpAddress" : "kubemasterIP",
             "Username" : "localadmin",
