@@ -154,6 +154,27 @@ function PrintConfig
 
 ###################################################################################################
 
+function FetchKubeConfig
+{
+    Add-Type '
+        using System.Net;
+        using System.Security.Cryptography.X509Certificates;
+        public class TrustAllCertsPolicy : ICertificatePolicy {
+            public bool CheckValidationResult(
+                ServicePoint srvPoint, X509Certificate certificate,
+                WebRequest request, int certificateProblem) {
+                return true;
+            }
+        }
+    '
+    [System.Net.ServicePointManager]::CertificatePolicy = New-Object TrustAllCertsPolicy
+    [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Ssl3, [Net.SecurityProtocolType]::Tls, [Net.SecurityProtocolType]::Tls11, [Net.SecurityProtocolType]::Tls12
+
+    $MasterAddr = $Global:MasterIp
+    $ClusterInfo = (Invoke-WebRequest -UseBasicParsing -Method GET -Headers $CommonHeaders -UserAgent $UserAgent -Uri "https://$MasterAddr/api/v1/namespaces/kube-public/configmaps/cluster-info").Content | ConvertFrom-Json
+    $ClusterInfo.kubeconfig | Out-File -Path $(GetKubeConfig)
+}
+
 function DownloadFile
 {
     param(
@@ -1332,6 +1353,7 @@ function GetFileContent
 
 # List of all exports from this module
 Export-ModuleMember DownloadFile
+Export-ModuleMember FetchKubeConfig
 Export-ModuleMember CleanupOldNetwork
 Export-ModuleMember IsNodeRegistered
 Export-ModuleMember WaitForNetwork

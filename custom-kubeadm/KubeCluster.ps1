@@ -236,7 +236,11 @@ if ($Join.IsPresent)
     $kubeConfig = GetKubeConfig
     if (!(KubeConfigExists))
     {
-        throw "$kubeConfig does not exists. Please provide kubeconfig file."
+        FetchKubeConfig
+        if (!(KubeConfigExists))
+        {
+            throw "$kubeConfig does not exists. Please provide kubeconfig file."
+        }
     }
 
     # Validate connectivity with the API Server
