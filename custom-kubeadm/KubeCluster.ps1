@@ -71,7 +71,7 @@ if ($help.IsPresent)
 
 function ReadKubeclusterConfig
 {
-    params (
+    param (
         [String] $ConfigFile
     )
     # Read the configuration and initialize default values if not found

@@ -190,7 +190,7 @@ function DownloadFile
 
 function CleanupOldNetwork
 {
-    params (
+    param (
         [String] $NetworkName,
         [Boolean] $ClearDocker = $true
     )
@@ -221,7 +221,7 @@ function CleanupPolicyList
 
 function WaitForNetwork
 {
-    params (
+    param (
         [String] $NetworkName,
         [Int32] $waitTimeSeconds = 60
     )
@@ -252,7 +252,7 @@ function IsNodeRegistered
 
 function WaitForServiceRunningState
 {
-    params (
+    param (
         [String] $ServiceName,
         [Int32] $TimeoutSeconds
     )
@@ -277,7 +277,7 @@ function WaitForServiceRunningState
 
 function DownloadCniBinaries
 {
-    params (
+    param (
         [String] $NetworkMode,
         [String] $CniPath
     )
@@ -361,7 +361,7 @@ function StartFlanneld
 
 function GetSourceVip
 {
-    params (
+    param (
         [String] $NetworkName
     )
     $sourceVipJson = [io.Path]::Combine($Global:BaseDir,  "sourceVip.json")
@@ -465,7 +465,7 @@ function Get-MgmtSubnet
 
 function CreateDirectory
 {
-    params (
+    param (
         [String] $Path
     )
     if (!(Test-Path $Path))
@@ -1243,7 +1243,7 @@ function GetServiceCidr
 
 function InstallCRI
 {
-    params (
+    param (
         [String] $cri
     )
     # Install CRI
@@ -1268,7 +1268,7 @@ function InstallCRI
 
 function InstallCNI
 {
-    params (
+    param (
         [String] $cni,
         [String] $NetworkMode,
         [String] $ManagementIp,
@@ -1300,7 +1300,7 @@ function InstallCNI
 
 function UninstallCNI
 {
-    params (
+    param (
         [String] $cni
     )
     switch ($Cni)
@@ -1317,7 +1317,7 @@ function UninstallCNI
 
 function GetFileContent
 {
-    params (
+    param (
         [String] $Path
     )
     if ((Test-Path $Path))
